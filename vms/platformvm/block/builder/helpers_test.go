@@ -156,6 +156,7 @@ func newEnvironment(t *testing.T, f upgradetest.Fork) *environment { //nolint:un
 
 	txVerifier := network.NewLockedTxVerifier(&res.ctx.Lock, res.blkManager)
 	res.network, err = network.New(
+		context.Background(),
 		res.backend.Ctx.Log,
 		res.backend.Ctx.NodeID,
 		res.backend.Ctx.SubnetID,
