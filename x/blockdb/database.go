@@ -234,7 +234,7 @@ func New(config DatabaseConfig, log logging.Logger) (*Database, error) {
 	// Initialize compressor if compression is enabled
 	if config.CompressBlocks {
 		var err error
-		s.compressor, err = compression.NewZstdCompressor(math.MaxInt64 - 1)
+		s.compressor, err = compression.NewZstdCompressor(math.MaxUint32)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize compressor: %w", err)
 		}
