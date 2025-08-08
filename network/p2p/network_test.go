@@ -795,7 +795,7 @@ func TestMultipleClients(t *testing.T) {
 
 func TestNetworkConnectedValidators_ConnectAndDisconnect(t *testing.T) {
 	tests := []struct {
-		name                    string
+		name string
 		// These arrays must be of the same length
 		validators              [][]ids.NodeID
 		connectedPeers          [][]ids.NodeID
@@ -935,7 +935,7 @@ func TestNetworkConnectedValidators_ConnectAndDisconnect(t *testing.T) {
 			require.NoError(err)
 
 			for i, validatorSet := range tt.validators {
-				validatorState.GetCurrentHeightF = func(ctx context.Context) (
+				validatorState.GetCurrentHeightF = func(_ context.Context) (
 					uint64,
 					error,
 				) {

@@ -153,7 +153,7 @@ func (n *Network) AppGossip(
 }
 
 func (n *Network) Connected(
-	ctx context.Context,
+	_ context.Context,
 	nodeID ids.NodeID,
 	_ *version.Application,
 ) error {
@@ -163,7 +163,7 @@ func (n *Network) Connected(
 	return nil
 }
 
-func (n *Network) Disconnected(ctx context.Context, nodeID ids.NodeID) error {
+func (n *Network) Disconnected(_ context.Context, nodeID ids.NodeID) error {
 	n.Peers.remove(nodeID)
 	n.Validators.disconnected(nodeID)
 

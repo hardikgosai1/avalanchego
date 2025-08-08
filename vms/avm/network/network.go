@@ -37,7 +37,7 @@ type Network struct {
 }
 
 func New(
-	ctx context.Context,
+	_ context.Context,
 	log logging.Logger,
 	nodeID ids.NodeID,
 	subnetID ids.ID,
