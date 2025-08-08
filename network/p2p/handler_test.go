@@ -241,7 +241,6 @@ func TestNewHandler(t *testing.T) {
 
 			validatorSet := &testValidatorSet{}
 			handler := NewHandler(
-				context.Background(),
 				logging.NoLog{},
 				NoOpHandler{},
 				validatorSet,

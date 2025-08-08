@@ -137,14 +137,14 @@ func (d *dynamicThrottlerHandler) checkUpdateThrottlingLimit(ctx context.Context
 // throttling limit is dynamically updated to be inversely proportional to the
 // number of connected network validators.
 func NewHandler(
-	ctx context.Context,
 	log logging.Logger,
 	handler Handler,
 	validatorSet ValidatorSet,
 	period time.Duration,
 	requestsPerPeer int,
 ) Handler {
-	throttler := NewSlidingWindowThrottler(period, validatorSet.Len(ctx))
+	// Throttling limit will be initialized when a request is handled
+	throttler := NewSlidingWindowThrottler(period, 0)
 
 	throttlerHandler := &dynamicThrottlerHandler{
 		Handler:         NewThrottlerHandler(handler, throttler, log),

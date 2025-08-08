@@ -131,7 +131,6 @@ func New(
 	}
 
 	handler := p2p.NewHandler(
-		ctx,
 		log,
 		gossip.NewHandler[*txs.Tx](
 			log,
