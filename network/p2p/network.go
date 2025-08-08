@@ -158,14 +158,14 @@ func (n *Network) Connected(
 	_ *version.Application,
 ) error {
 	n.Peers.add(nodeID)
-	n.Validators.connected(ctx, nodeID)
+	n.Validators.connected(nodeID)
 
 	return nil
 }
 
 func (n *Network) Disconnected(ctx context.Context, nodeID ids.NodeID) error {
 	n.Peers.remove(nodeID)
-	n.Validators.disconnected(ctx, nodeID)
+	n.Validators.disconnected(nodeID)
 
 	return nil
 }

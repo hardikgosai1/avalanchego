@@ -181,7 +181,6 @@ func (vm *VM) Initialize(
 
 	txVerifier := network.NewLockedTxVerifier(&txExecutorBackend.Ctx.Lock, vm.manager)
 	vm.Network, err = network.New(
-		ctx,
 		chainCtx.Log,
 		chainCtx.NodeID,
 		chainCtx.SubnetID,

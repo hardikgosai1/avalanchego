@@ -225,7 +225,6 @@ func TestNetworkIssueTxFromRPC(t *testing.T) {
 
 			snowCtx := snowtest.Context(t, ids.Empty)
 			n, err := New(
-				context.Background(),
 				snowCtx.Log,
 				snowCtx.NodeID,
 				snowCtx.SubnetID,

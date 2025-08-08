@@ -179,28 +179,16 @@ func (v *Validators) Len(ctx context.Context) int {
 	return v.connectedValidators.Len()
 }
 
-func (v *Validators) connected(ctx context.Context, nodeID ids.NodeID) {
+func (v *Validators) connected(nodeID ids.NodeID) {
 	v.lock.Lock()
 	defer v.lock.Unlock()
-
-	v.refresh(ctx)
-
-	if v.validatorSet.Contains(nodeID) {
-		v.connectedValidators.Add(nodeID)
-	}
 
 	v.peers.Add(nodeID)
 }
 
-func (v *Validators) disconnected(ctx context.Context, nodeID ids.NodeID) {
+func (v *Validators) disconnected(nodeID ids.NodeID) {
 	v.lock.Lock()
 	defer v.lock.Unlock()
-
-	v.refresh(ctx)
-
-	if v.validatorSet.Contains(nodeID) {
-		v.connectedValidators.Remove(nodeID)
-	}
 
 	v.peers.Remove(nodeID)
 }
