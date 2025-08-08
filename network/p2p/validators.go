@@ -96,7 +96,7 @@ func (v *Validators) refresh(ctx context.Context) {
 	}
 	utils.Sort(v.validatorList)
 
-	v.connectedValidators = set.Intersect(v.connectedValidators, v.peers)
+	v.connectedValidators = set.Intersect(v.validatorSet, v.peers)
 
 	v.lastUpdated = time.Now()
 }

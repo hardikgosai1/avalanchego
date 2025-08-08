@@ -796,38 +796,124 @@ func TestMultipleClients(t *testing.T) {
 func TestNetworkConnectedValidators_ConnectAndDisconnect(t *testing.T) {
 	tests := []struct {
 		name                    string
-		validators              []ids.NodeID
-		connectedPeers          []ids.NodeID
-		disconnectedPeers       []ids.NodeID
-		wantConnectedValidators []ids.NodeID
+		// These arrays must be of the same length
+		validators              [][]ids.NodeID
+		connectedPeers          [][]ids.NodeID
+		disconnectedPeers       [][]ids.NodeID
+		wantConnectedValidators [][]ids.NodeID
 	}{
 		{
-			name:       "has validators and no peers",
-			validators: []ids.NodeID{{1}, {2}, {3}},
+			name: "has validators and no peers",
+			validators: [][]ids.NodeID{
+				{{1}, {2}, {3}},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{},
+			},
 		},
 		{
-			name:           "has no validators and peers",
-			connectedPeers: []ids.NodeID{{1}, {2}, {3}},
+			name: "has no validators and peers",
+			validators: [][]ids.NodeID{
+				{},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{{1}, {2}, {3}},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{},
+			},
 		},
 		{
-			name:                    "has connected validator",
-			validators:              []ids.NodeID{{1}, {2}, {3}},
-			connectedPeers:          []ids.NodeID{{1}},
-			wantConnectedValidators: []ids.NodeID{{1}},
+			name: "has connected validator",
+			validators: [][]ids.NodeID{
+				{{1}, {2}, {3}},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{{1}},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{{1}},
+			},
 		},
 		{
-			name:                    "connected validator disconnects",
-			validators:              []ids.NodeID{{1}, {2}, {3}},
-			connectedPeers:          []ids.NodeID{{1}},
-			disconnectedPeers:       []ids.NodeID{{1}},
-			wantConnectedValidators: nil,
+			name: "connected validator disconnects",
+			validators: [][]ids.NodeID{
+				{{1}, {2}, {3}},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{{1}},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{{1}},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{},
+			},
 		},
 		{
-			name:                    "one connected validator + one connected validator disconnects + one disconnected validator",
-			validators:              []ids.NodeID{{1}, {2}, {3}},
-			connectedPeers:          []ids.NodeID{{1}, {2}},
-			disconnectedPeers:       []ids.NodeID{{2}},
-			wantConnectedValidators: []ids.NodeID{{1}},
+			name: "one connected validator + one connected validator disconnects + one disconnected validator",
+			validators: [][]ids.NodeID{
+				{{1}, {2}, {3}},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{{1}, {2}},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{{2}},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{{1}},
+			},
+		},
+		{
+			name: "disconnected validator added",
+			validators: [][]ids.NodeID{
+				{{1}},
+				{{1}, {2}},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{{1}},
+				{},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{},
+				{},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{{1}},
+				{{1}},
+			},
+		},
+		{
+			name: "connected validator added",
+			validators: [][]ids.NodeID{
+				{{1}},
+				{{1}, {2}},
+			},
+			connectedPeers: [][]ids.NodeID{
+				{{1}, {2}},
+				{},
+			},
+			disconnectedPeers: [][]ids.NodeID{
+				{},
+				{},
+			},
+			wantConnectedValidators: [][]ids.NodeID{
+				{{1}},
+				{{1}, {2}},
+			},
 		},
 	}
 
@@ -835,60 +921,66 @@ func TestNetworkConnectedValidators_ConnectAndDisconnect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 
-			validatorState := &validatorstest.State{
-				GetCurrentHeightF: func(context.Context) (uint64, error) {
-					return 0, nil
-				},
-				GetValidatorSetF: func(
-					context.Context,
-					uint64,
-					ids.ID,
-				) (map[ids.NodeID]*validators.GetValidatorOutput, error) {
-					validatorSet := make(map[ids.NodeID]*validators.GetValidatorOutput)
-
-					for _, nodeID := range tt.validators {
-						validatorSet[nodeID] = &validators.GetValidatorOutput{
-							NodeID: nodeID,
-						}
-					}
-
-					return validatorSet, nil
-				},
-			}
+			validatorState := &validatorstest.State{}
 
 			n, err := NewNetwork(
 				logging.NoLog{},
 				&enginetest.Sender{},
 				validatorState,
 				ids.Empty,
-				time.Second,
+				0,
 				prometheus.NewRegistry(),
 				"",
 			)
 			require.NoError(err)
 
-			for _, nodeID := range tt.connectedPeers {
-				require.NoError(n.Connected(context.Background(), nodeID, nil))
-			}
+			for i, validatorSet := range tt.validators {
+				validatorState.GetCurrentHeightF = func(ctx context.Context) (
+					uint64,
+					error,
+				) {
+					return uint64(i), nil
+				}
 
-			for _, nodeID := range tt.disconnectedPeers {
-				require.NoError(n.Disconnected(context.Background(), nodeID))
-			}
+				validatorState.GetValidatorSetF = func(
+					context.Context,
+					uint64,
+					ids.ID,
+				) (map[ids.NodeID]*validators.GetValidatorOutput, error) {
+					result := make(map[ids.NodeID]*validators.GetValidatorOutput)
 
-			require.Equal(
-				len(tt.wantConnectedValidators),
-				n.Validators.Len(context.Background()),
-			)
+					for _, nodeID := range validatorSet {
+						result[nodeID] = &validators.GetValidatorOutput{
+							NodeID: nodeID,
+						}
+					}
 
-			for _, nodeID := range tt.wantConnectedValidators {
-				require.True(n.Validators.Has(context.Background(), nodeID))
-			}
+					return result, nil
+				}
 
-			wantDisconnectedValidators := set.Of(tt.validators...)
-			wantDisconnectedValidators.Difference(set.Of(tt.wantConnectedValidators...))
+				for _, nodeID := range tt.connectedPeers[i] {
+					require.NoError(n.Connected(context.Background(), nodeID, nil))
+				}
 
-			for nodeID := range wantDisconnectedValidators {
-				require.False(n.Validators.Has(context.Background(), nodeID))
+				for _, nodeID := range tt.disconnectedPeers[i] {
+					require.NoError(n.Disconnected(context.Background(), nodeID))
+				}
+
+				require.Equal(
+					len(tt.wantConnectedValidators[i]),
+					n.Validators.Len(context.Background()),
+				)
+
+				for _, nodeID := range tt.wantConnectedValidators[i] {
+					require.True(n.Validators.Has(context.Background(), nodeID))
+				}
+
+				wantDisconnectedValidators := set.Of(validatorSet...)
+				wantDisconnectedValidators.Difference(set.Of(tt.wantConnectedValidators[i]...))
+
+				for nodeID := range wantDisconnectedValidators {
+					require.False(n.Validators.Has(context.Background(), nodeID))
+				}
 			}
 		})
 	}
