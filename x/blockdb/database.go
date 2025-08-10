@@ -405,7 +405,7 @@ func (s *Database) WriteBlock(height BlockHeight, block BlockData, headerSize Bl
 		Height:     height,
 		Size:       blockDataLen,
 		HeaderSize: headerSize,
-		Checksum:   calculateChecksum(block), // Use original block for checksum
+		Checksum:   calculateChecksum(blockToWrite),
 		Version:    BlockEntryVersion,
 	}
 	if err := s.writeBlockAt(writeDataOffset, bh, blockToWrite); err != nil {
