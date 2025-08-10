@@ -418,3 +418,73 @@ func TestStructSizes(t *testing.T) {
 		})
 	}
 }
+
+func TestDatabaseInspect(t *testing.T) {
+	tempDir := t.TempDir()
+	config := DefaultConfig().WithDir(tempDir).WithMinimumHeight(3)
+
+	// Create database
+	db, err := New(config, logging.NoLog{})
+	require.NoError(t, err)
+	defer db.Close()
+
+	// Write some test blocks with gaps
+	testBlocks := []struct {
+		height     uint64
+		data       []byte
+		headerSize uint32
+	}{
+		{3, []byte("header0:block0"), 7},
+		{4, []byte("header1:block1"), 7},
+		{5, []byte("header2:block2"), 7},
+		{6, []byte("header5:block5"), 7},
+		{7, []byte("header6:block6"), 7},
+		{9, []byte("header7:block7"), 7},
+		{10, []byte("header10:block10"), 8},
+		{11, []byte("header11:block11"), 8},
+	}
+
+	for _, block := range testBlocks {
+		err := db.WriteBlock(block.height, block.data, block.headerSize)
+		require.NoError(t, err)
+	}
+
+	result, err := db.Inspect()
+	require.NoError(t, err)
+
+	// Verify the output contains expected information
+	require.Contains(t, result, "Min Height: 3")
+	require.Contains(t, result, "Max Block Height: 11")
+	require.Contains(t, result, "Max Contiguous Height: 7")
+	require.Contains(t, result, "Total Blocks: 8")
+	require.Contains(t, result, "Total Database Size: 532 bytes")
+	require.Contains(t, result, "Index File Size: 208 bytes")
+	require.Contains(t, result, "Data Files Size: 324 bytes")
+	require.Contains(t, result, "Number of Data Files: 1")
+	require.Contains(t, result, "Average Block Size: 40 bytes")
+}
+
+func TestDatabaseInspectEmpty(t *testing.T) {
+	tempDir := t.TempDir()
+	config := DefaultConfig().WithDir(tempDir)
+
+	// Create database
+	db, err := New(config, logging.NoLog{})
+	require.NoError(t, err)
+	defer db.Close()
+
+	// Call Inspect on empty database
+	result, err := db.Inspect()
+	require.NoError(t, err)
+
+	// Verify the output for empty database
+	require.Contains(t, result, "Min Height: 0")
+	require.Contains(t, result, "Max Block Height: None")
+	require.Contains(t, result, "Max Contiguous Height: None")
+	require.Contains(t, result, "Total Blocks: 0")
+	require.Contains(t, result, "Total Database Size: 64 bytes")
+	require.Contains(t, result, "Index File Size: 64 bytes")
+	require.Contains(t, result, "Data Files Size: 0 bytes")
+	require.Contains(t, result, "Number of Data Files: 0")
+	require.Contains(t, result, "Average Block Size: 0 bytes")
+}
