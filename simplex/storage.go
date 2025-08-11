@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2024, Ava Labs, Inc. All rights reserved.
+// Copyright (C) 2019-2025, Ava Labs, Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 
 package simplex
@@ -137,6 +137,14 @@ func (s *Storage) Index(ctx context.Context, block simplex.VerifiedBlock, finali
 	currentHeight := s.height.Load()
 	if currentHeight != bh.Seq {
 		return fmt.Errorf("%w: expected %d, got %d", errUnexpectedSeq, currentHeight, bh.Seq)
+	}
+
+	if s.blockTracker.lastIndexed != bh.Prev {
+		s.log.Warn("attempted to index block with mismatched previous digest",
+			zap.String("expected", s.blockTracker.lastIndexed.String()),
+			zap.String("got", bh.Prev.String()))
+
+		return fmt.Errorf("%w: expected %s, got %s", errMismatchedPrevDigest, s.blockTracker.lastIndexed, bh.Prev)
 	}
 
 	if !bytes.Equal(bh.Digest[:], finalization.Finalization.Digest[:]) {

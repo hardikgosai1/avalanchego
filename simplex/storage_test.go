@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2024, Ava Labs, Inc. All rights reserved.
+// Copyright (C) 2019-2025, Ava Labs, Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 
 package simplex
@@ -194,6 +194,42 @@ func TestStorageIndexFails(t *testing.T) {
 			require.Equal(t, uint64(1), s.Height())
 		})
 	}
+}
+
+// TestIndexMismatchedChild tests that the previously indexed digest matches the
+// previous digest of the block being indexed.
+func TestIndexMismatchedChild(t *testing.T) {
+	ctx := context.Background()
+	genesis := newBlock(t, newBlockConfig{})
+	child1 := newBlock(t, newBlockConfig{prev: genesis})
+	child1Sibling := newBlock(t, newBlockConfig{prev: genesis})
+	child2Cousin := newBlock(t, newBlockConfig{prev: child1Sibling})
+
+	configs := newNetworkConfigs(t, 4)
+	configs[0].VM = genesis.vmBlock.(*wrappedBlock).vm
+
+	_, verifier := NewBLSAuth(configs[0])
+	qc := QCDeserializer{
+		verifier: &verifier,
+	}
+
+	s, err := newStorage(ctx, configs[0], &qc, genesis.blockTracker)
+	require.NoError(t, err)
+
+	_, err = child1.Verify(ctx)
+	require.NoError(t, err)
+	_, err = child1Sibling.Verify(ctx)
+	require.NoError(t, err)
+
+	// Index child1
+	require.NoError(t, s.Index(ctx, child1, newTestFinalization(t, configs, child1.BlockHeader())))
+
+	_, err = child2Cousin.Verify(ctx)
+	require.NoError(t, err)
+
+	// Attempt to index child2 before child1 is verified
+	err = s.Index(ctx, child2Cousin, newTestFinalization(t, configs, child2Cousin.BlockHeader()))
+	require.ErrorIs(t, err, errMismatchedPrevDigest)
 }
 
 // TestStorageIndexSuccess indexes 10 blocks and verifies that they can be retrieved.

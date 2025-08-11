@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2024, Ava Labs, Inc. All rights reserved.
+// Copyright (C) 2019-2025, Ava Labs, Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 
 package simplex
@@ -155,6 +155,9 @@ type blockTracker struct {
 
 	// handles block acceptance and rejection of inner blocks
 	tree tree.Tree
+
+	// digest of the last block that was indexed
+	lastIndexed simplex.Digest
 }
 
 func newBlockTracker(latestBlock *Block) *blockTracker {
@@ -163,6 +166,7 @@ func newBlockTracker(latestBlock *Block) *blockTracker {
 		simplexDigestsToBlock: map[simplex.Digest]*Block{
 			latestBlock.digest: latestBlock,
 		},
+		lastIndexed: latestBlock.digest,
 	}
 }
 
@@ -214,5 +218,11 @@ func (bt *blockTracker) indexBlock(ctx context.Context, digest simplex.Digest) e
 	}
 
 	// notify the VM that we are accepting this block, and reject all competing blocks
-	return bt.tree.Accept(ctx, bd.vmBlock)
+	err := bt.tree.Accept(ctx, bd.vmBlock)
+	if err != nil {
+		return fmt.Errorf("failed to accept block: %w", err)
+	}
+
+	bt.lastIndexed = digest
+	return nil
 }
