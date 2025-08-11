@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2024, Ava Labs, Inc. All rights reserved.
+// Copyright (C) 2019-2025, Ava Labs, Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 
 package simplex
@@ -68,7 +68,7 @@ func TestBlockBuilder(t *testing.T) {
 
 			vm.WaitForEventF = func(_ context.Context) (common.Message, error) {
 				count++
-				time.Sleep(time.Millisecond * 20)
+				time.Sleep(20 * time.Millisecond)
 				return common.PendingTxs, nil
 			}
 			vm.BuildBlockF = tt.vmBlockBuildF
@@ -78,8 +78,10 @@ func TestBlockBuilder(t *testing.T) {
 				vm:           vm,
 				blockTracker: genesis.blockTracker,
 			}
-			timeoutCtx, cancelCtx := context.WithTimeout(ctx, time.Millisecond*100)
+
+			timeoutCtx, cancelCtx := context.WithTimeout(ctx, 100*time.Millisecond)
 			defer cancelCtx()
+
 			block, built := bb.BuildBlock(timeoutCtx, child.BlockHeader().ProtocolMetadata)
 			require.Equal(t, tt.shouldBuild, built)
 			if tt.expectedBlock == nil {
@@ -100,15 +102,8 @@ func TestBlockBuilderCancelContext(t *testing.T) {
 		prev: genesis,
 	})
 	vm.WaitForEventF = func(ctx context.Context) (common.Message, error) {
-		waitChan := make(chan struct{})
-		for {
-			select {
-			case <-ctx.Done():
-				return 0, ctx.Err()
-			case <-waitChan:
-				return common.PendingTxs, nil
-			}
-		}
+		<-ctx.Done()
+		return 0, ctx.Err()
 	}
 
 	bb := &BlockBuilder{
@@ -117,7 +112,7 @@ func TestBlockBuilderCancelContext(t *testing.T) {
 		blockTracker: genesis.blockTracker,
 	}
 
-	timeoutCtx, cancelCtx := context.WithTimeout(ctx, time.Second)
+	timeoutCtx, cancelCtx := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancelCtx()
 
 	_, built := bb.BuildBlock(timeoutCtx, child.BlockHeader().ProtocolMetadata)

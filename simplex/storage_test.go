@@ -200,10 +200,10 @@ func TestStorageIndexFails(t *testing.T) {
 // previous digest of the block being indexed.
 func TestIndexMismatchedChild(t *testing.T) {
 	ctx := context.Background()
-	genesis := newBlock(t, newBlockConfig{})
-	child1 := newBlock(t, newBlockConfig{prev: genesis})
-	child1Sibling := newBlock(t, newBlockConfig{prev: genesis})
-	child2Cousin := newBlock(t, newBlockConfig{prev: child1Sibling})
+	genesis := newTestBlock(t, newBlockConfig{})
+	child1 := newTestBlock(t, newBlockConfig{prev: genesis})
+	child1Sibling := newTestBlock(t, newBlockConfig{prev: genesis})
+	child2Cousin := newTestBlock(t, newBlockConfig{prev: child1Sibling})
 
 	configs := newNetworkConfigs(t, 4)
 	configs[0].VM = genesis.vmBlock.(*wrappedBlock).vm

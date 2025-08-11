@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2024, Ava Labs, Inc. All rights reserved.
+// Copyright (C) 2019-2025, Ava Labs, Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 
 package simplex
@@ -72,7 +72,6 @@ func (b *BlockBuilder) incomingBlock(ctx context.Context) error {
 			return err
 		}
 		if msg == common.PendingTxs {
-			b.log.Info("Received pending transactions")
 			return nil
 		}
 		b.log.Warn("Received unexpected message", zap.String("message", msg.String()))
