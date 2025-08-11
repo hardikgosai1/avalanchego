@@ -45,7 +45,7 @@ func (b *BlockBuilder) BuildBlock(ctx context.Context, metadata simplex.Protocol
 				continue
 			}
 
-			verifiedBlock, err := simplexBlock.Verify(context.Background())
+			verifiedBlock, err := simplexBlock.Verify(ctx)
 			if err != nil {
 				b.log.Error("Error verifying block we built ourselves: %s", zap.Error(err))
 				continue
