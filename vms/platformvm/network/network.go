@@ -5,7 +5,6 @@ package network
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -64,7 +63,7 @@ func New(
 		"p2p",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize p2p network: %w", err)
+		return nil, err
 	}
 
 	marshaller := txMarshaller{}
@@ -129,21 +128,34 @@ func New(
 		Validators: p2pNetwork.Validators,
 	}
 
-	handler := p2p.NewHandler(
+	handler := gossip.NewHandler[*txs.Tx](
 		log,
-		gossip.NewHandler[*txs.Tx](
-			log,
-			marshaller,
-			gossipMempool,
-			txGossipMetrics,
-			config.TargetGossipSize,
-		),
-		p2pNetwork.Validators,
-		config.PullGossipThrottlingPeriod,
-		config.PullGossipRequestsPerValidator,
+		marshaller,
+		gossipMempool,
+		txGossipMetrics,
+		config.TargetGossipSize,
 	)
 
-	if err := p2pNetwork.AddHandler(p2p.TxGossipHandlerID, handler); err != nil {
+	validatorHandler := p2p.NewValidatorHandler(
+		p2p.NewDynamicThrottlerHandler(
+			log,
+			handler,
+			p2pNetwork.Validators,
+			config.PullGossipThrottlingPeriod,
+			config.PullGossipRequestsPerValidator,
+		),
+		p2pNetwork.Validators,
+		log,
+	)
+
+	// We allow pushing txs between all peers, but only serve gossip requests
+	// from validators
+	txGossipHandler := txGossipHandler{
+		appGossipHandler:  handler,
+		appRequestHandler: validatorHandler,
+	}
+
+	if err := p2pNetwork.AddHandler(p2p.TxGossipHandlerID, txGossipHandler); err != nil {
 		return nil, err
 	}
 

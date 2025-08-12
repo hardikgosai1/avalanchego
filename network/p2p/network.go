@@ -116,47 +116,23 @@ type Network struct {
 	router *router
 }
 
-func (n *Network) AppRequest(
-	ctx context.Context,
-	nodeID ids.NodeID,
-	requestID uint32,
-	deadline time.Time,
-	request []byte,
-) error {
+func (n *Network) AppRequest(ctx context.Context, nodeID ids.NodeID, requestID uint32, deadline time.Time, request []byte) error {
 	return n.router.AppRequest(ctx, nodeID, requestID, deadline, request)
 }
 
-func (n *Network) AppResponse(
-	ctx context.Context,
-	nodeID ids.NodeID,
-	requestID uint32,
-	response []byte,
-) error {
+func (n *Network) AppResponse(ctx context.Context, nodeID ids.NodeID, requestID uint32, response []byte) error {
 	return n.router.AppResponse(ctx, nodeID, requestID, response)
 }
 
-func (n *Network) AppRequestFailed(
-	ctx context.Context,
-	nodeID ids.NodeID,
-	requestID uint32,
-	appErr *common.AppError,
-) error {
+func (n *Network) AppRequestFailed(ctx context.Context, nodeID ids.NodeID, requestID uint32, appErr *common.AppError) error {
 	return n.router.AppRequestFailed(ctx, nodeID, requestID, appErr)
 }
 
-func (n *Network) AppGossip(
-	ctx context.Context,
-	nodeID ids.NodeID,
-	msg []byte,
-) error {
+func (n *Network) AppGossip(ctx context.Context, nodeID ids.NodeID, msg []byte) error {
 	return n.router.AppGossip(ctx, nodeID, msg)
 }
 
-func (n *Network) Connected(
-	_ context.Context,
-	nodeID ids.NodeID,
-	_ *version.Application,
-) error {
+func (n *Network) Connected(_ context.Context, nodeID ids.NodeID, _ *version.Application) error {
 	n.Peers.add(nodeID)
 	n.Validators.connected(nodeID)
 

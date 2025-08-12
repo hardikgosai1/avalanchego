@@ -229,7 +229,6 @@ func TestNetworkIssueTxFromRPC(t *testing.T) {
 			}
 
 			n, err := New(
-				context.Background(),
 				logging.NoLog{},
 				ids.EmptyNodeID,
 				ids.Empty,
@@ -237,11 +236,7 @@ func TestNetworkIssueTxFromRPC(t *testing.T) {
 					GetCurrentHeightF: func(context.Context) (uint64, error) {
 						return 0, nil
 					},
-					GetValidatorSetF: func(
-						context.Context,
-						uint64,
-						ids.ID,
-					) (map[ids.NodeID]*validators.GetValidatorOutput, error) {
+					GetValidatorSetF: func(context.Context, uint64, ids.ID) (map[ids.NodeID]*validators.GetValidatorOutput, error) {
 						return nil, nil
 					},
 				},
@@ -308,7 +303,6 @@ func TestNetworkIssueTxFromRPCWithoutVerification(t *testing.T) {
 			}
 
 			n, err := New(
-				context.Background(),
 				logging.NoLog{},
 				ids.EmptyNodeID,
 				ids.Empty,
@@ -316,16 +310,12 @@ func TestNetworkIssueTxFromRPCWithoutVerification(t *testing.T) {
 					GetCurrentHeightF: func(context.Context) (uint64, error) {
 						return 0, nil
 					},
-					GetValidatorSetF: func(
-						context.Context,
-						uint64,
-						ids.ID,
-					) (map[ids.NodeID]*validators.GetValidatorOutput, error) {
+					GetValidatorSetF: func(context.Context, uint64, ids.ID) (map[ids.NodeID]*validators.GetValidatorOutput, error) {
 						return nil, nil
 					},
 				},
 				parser,
-				executormock.NewManager(ctrl),
+				executormock.NewManager(ctrl), // Should never verify a tx
 				tt.mempool,
 				appSenderFunc(ctrl),
 				prometheus.NewRegistry(),

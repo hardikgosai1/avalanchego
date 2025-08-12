@@ -37,7 +37,6 @@ type Network struct {
 }
 
 func New(
-	_ context.Context,
 	log logging.Logger,
 	nodeID ids.NodeID,
 	subnetID ids.ID,
@@ -126,21 +125,34 @@ func New(
 		Validators: p2pNetwork.Validators,
 	}
 
-	handler := p2p.NewHandler(
+	handler := gossip.NewHandler[*txs.Tx](
 		log,
-		gossip.NewHandler[*txs.Tx](
-			log,
-			marshaller,
-			gossipMempool,
-			txGossipMetrics,
-			config.TargetGossipSize,
-		),
-		p2pNetwork.Validators,
-		config.PullGossipThrottlingPeriod,
-		config.PullGossipRequestsPerValidator,
+		marshaller,
+		gossipMempool,
+		txGossipMetrics,
+		config.TargetGossipSize,
 	)
 
-	if err := p2pNetwork.AddHandler(p2p.TxGossipHandlerID, handler); err != nil {
+	validatorHandler := p2p.NewValidatorHandler(
+		p2p.NewDynamicThrottlerHandler(
+			log,
+			handler,
+			p2pNetwork.Validators,
+			config.PullGossipThrottlingPeriod,
+			config.PullGossipRequestsPerValidator,
+		),
+		p2pNetwork.Validators,
+		log,
+	)
+
+	// We allow pushing txs between all peers, but only serve gossip requests
+	// from validators
+	txGossipHandler := txGossipHandler{
+		appGossipHandler:  handler,
+		appRequestHandler: validatorHandler,
+	}
+
+	if err := p2pNetwork.AddHandler(p2p.TxGossipHandlerID, txGossipHandler); err != nil {
 		return nil, err
 	}
 

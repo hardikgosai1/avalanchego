@@ -117,7 +117,7 @@ func TestValidatorHandlerAppRequest(t *testing.T) {
 	}
 }
 
-func TestNewHandler(t *testing.T) {
+func TestNewDynamicThrottlerHandler(t *testing.T) {
 	type request struct {
 		nodeID  ids.NodeID
 		wantErr *common.AppError
@@ -142,17 +142,6 @@ func TestNewHandler(t *testing.T) {
 			requests: [][]request{
 				{
 					{nodeID: ids.NodeID{1}},
-				},
-			},
-		},
-		{
-			name: "non-validator request",
-			validatorSets: [][]ids.NodeID{
-				{},
-			},
-			requests: [][]request{
-				{
-					{nodeID: ids.NodeID{1}, wantErr: ErrNotValidator},
 				},
 			},
 		},
@@ -247,7 +236,7 @@ func TestNewHandler(t *testing.T) {
 			}
 
 			validatorSet := &testValidatorSet{}
-			handler := NewHandler(
+			handler := NewDynamicThrottlerHandler(
 				logging.NoLog{},
 				NoOpHandler{},
 				validatorSet,
