@@ -5,6 +5,7 @@ package simplex
 
 import (
 	"context"
+	"time"
 
 	"github.com/ava-labs/simplex"
 	"go.uber.org/zap"
@@ -23,31 +24,36 @@ type BlockBuilder struct {
 // BuildBlock continuously tries to build a block until the context is cancelled. If there are no blocks to be built, it will wait for an event from the VM.
 // It returns false if the context was cancelled, otherwise it returns the built block and true.
 func (b *BlockBuilder) BuildBlock(ctx context.Context, metadata simplex.ProtocolMetadata) (simplex.VerifiedBlock, bool) {
+	curWait := 10 * time.Millisecond
+	maxBackoff := 5 * time.Second
+
 	for {
 		select {
 		case <-ctx.Done():
-			b.log.Info("Context cancelled, stopping block building")
+			b.log.Debug("Context cancelled, stopping block building")
 			return nil, false
 		default:
 			err := b.incomingBlock(ctx)
 			if err != nil {
-				b.log.Error("Error waiting for incoming block:", zap.Error(err))
+				b.log.Debug("Error waiting for incoming block:", zap.Error(err))
+				curWait = backoff(ctx, curWait, maxBackoff)
 				continue
 			}
 			vmBlock, err := b.vm.BuildBlock(ctx)
 			if err != nil {
 				b.log.Error("Error building block:", zap.Error(err))
+				curWait = backoff(ctx, curWait, maxBackoff)
 				continue
 			}
 			simplexBlock, err := newBlock(metadata, vmBlock, b.blockTracker)
 			if err != nil {
 				b.log.Error("Error creating simplex block:", zap.Error(err))
-				continue
+				return nil, false
 			}
-
 			verifiedBlock, err := simplexBlock.Verify(ctx)
 			if err != nil {
 				b.log.Error("Error verifying block we built ourselves: %s", zap.Error(err))
+				curWait = backoff(ctx, curWait, maxBackoff)
 				continue
 			}
 
@@ -76,4 +82,20 @@ func (b *BlockBuilder) incomingBlock(ctx context.Context) error {
 		}
 		b.log.Warn("Received unexpected message", zap.String("message", msg.String()))
 	}
+}
+
+// backoff waits for `backoff` duration before returning the next backoff duration.
+// It doubles the backoff duration each time it is called, up to a maximum of `maxBackoff`.
+func backoff(ctx context.Context, backoff, maxBackoff time.Duration) time.Duration {
+	select {
+	case <-ctx.Done():
+		return 0
+	case <-time.After(backoff):
+	}
+
+	backoff *= 2 // Exponential backoff
+	if backoff > maxBackoff {
+		backoff = maxBackoff
+	}
+	return backoff
 }
