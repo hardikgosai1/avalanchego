@@ -68,7 +68,6 @@ func TestBlockBuilder(t *testing.T) {
 
 			vm.WaitForEventF = func(_ context.Context) (common.Message, error) {
 				count++
-				time.Sleep(20 * time.Millisecond)
 				return common.PendingTxs, nil
 			}
 			vm.BuildBlockF = tt.vmBlockBuildF
@@ -85,8 +84,8 @@ func TestBlockBuilder(t *testing.T) {
 			block, built := bb.BuildBlock(timeoutCtx, child.BlockHeader().ProtocolMetadata)
 			require.Equal(t, tt.shouldBuild, built)
 			if tt.expectedBlock == nil {
-				require.Nil(t, block, "Block should be nil when not built")
-				require.GreaterOrEqual(t, count, 1)
+				require.Nil(t, block)
+				require.Greater(t, count, 1)
 			} else {
 				require.Equal(t, tt.expectedBlock, block)
 			}
