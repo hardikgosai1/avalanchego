@@ -147,6 +147,9 @@ func TestNewHandler(t *testing.T) {
 		},
 		{
 			name: "non-validator request",
+			validatorSets: [][]ids.NodeID{
+				{},
+			},
 			requests: [][]request{
 				{
 					{nodeID: ids.NodeID{1}, wantErr: ErrNotValidator},
@@ -238,6 +241,10 @@ func TestNewHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
+
+			if len(tt.validatorSets) != len(tt.requests) {
+				require.Fail("validator sets and requests lengths do not match")
+			}
 
 			validatorSet := &testValidatorSet{}
 			handler := NewHandler(
