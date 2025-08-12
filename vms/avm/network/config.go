@@ -23,7 +23,8 @@ var DefaultConfig = Config{
 	PullGossipPollSize:             1,
 	PullGossipFrequency:            1500 * time.Millisecond,
 	PullGossipThrottlingPeriod:     10 * time.Second,
-	// 10 seconds/period * 1.5 requests/second ~= 6.67 requests per period
+	// PullGossipRequestsPerValidator = PullGossipThrottlingPeriod / PullGossipFrequency =
+	// 10 seconds/period / 1.5 requests/second ~= 6.67 requests
 	PullGossipRequestsPerValidator:              7,
 	ExpectedBloomFilterElements:                 8 * 1024,
 	ExpectedBloomFilterFalsePositiveProbability: .01,
